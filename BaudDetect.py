@@ -1,9 +1,7 @@
-import asyncio
+import random
 import canopen
-import can
 import pyttsx3
 import time
-
 def sayText(words):
     engine = pyttsx3.init()
     engine.setProperty('rate',200)
@@ -13,58 +11,64 @@ def sayText(words):
     engine.runAndWait()
     engine.stop()
 
-async def findDevice(baud):
+def findDevice(baud):
     isFindDevice = False
     network = canopen.Network()
-    BusScanner = canopen.network.NodeScanner(network)
     network.connect(bustype='slcan', channel='/dev/cu.usbmodem143201', bitrate=baud)
     network.nmt.send_command(0x01)
-    await asyncio.gather(search(network),receiveDate(250000))
-
-async def search(network):
-    limit = 127
+    # This will attempt to read an SDO from nodes 1 - 127
+    numbers = list(range(1,128))
+    random.shuffle(numbers)
     sdo_req = b"\x40\x00\x10\x00\x00\x00\x00\x00"
-    for node_id in range(1, limit + 1):
+    for node_id in numbers:
             network.send_message(0x600 + node_id, sdo_req)
-            time.sleep(0.3)
-
-async def receiveDate(baud):
-    bus = can.interface.Bus(bustype='slcan', channel='/dev/cu.usbmodem143201', bitrate=baud)
-    msg = bus.recv(1)
-    while(True):
-        if msg is not None:
-            print(msg) 
-    
+    # We may need to wait a short while here to allow all nodes to respond
+    time.sleep(0.05)
+    for node_id in network.scanner.nodes:
+        print("Found node %d!" % node_id)
+        sayText(f"节点ID的为{node_id},16进制表示为{hex(node_id)}")
+        isFindDevice = True
+    network.disconnect()
+    return isFindDevice
 
 def searchBaud():
-    baudList = {100000,500000,250000,1000000,250000,50000,20000,125000}
-    for baud in baudList:
-        isFindDevice = findDevice(baud)
-        if(isFindDevice == True):
-            if(baud == 10000):
-                print("baud num is 1")
-                sayText(f"波特率ID为1")
-            elif(baud == 20000):
-                print("baud num is 2")
-                sayText(f"波特率ID为2")
-            elif(baud == 50000):
-                print("baud num is 3")
-                sayText(f"波特率ID为3")
-            elif(baud == 100000):
-                print("baud num is 4")
-                sayText(f"波特率ID为4")
-            elif(baud == 125000):
-                print("baud num is 5")
-                sayText(f"波特率ID为5")
-            elif(baud == 250000):
-                print("baud num is 6")
-                sayText(f"波特率ID为6")
-            elif(baud == 500000):
-                print("baud num is 7")
-                sayText(f"波特率ID为7")
-            elif(baud == 1000000):
-                print("baud num is 8 or 0 other number ")
-                sayText(f"波特率ID为8或者0或者其他")
-
+    isFindDevice = False
+    while(isFindDevice == False):
+        baudList = {100000,500000,250000,1000000,250000,50000,20000,125000}
+        for baud in baudList:
+            isFindDevice = findDevice(baud)
+            if(isFindDevice == True):
+                if(baud == 10000):
+                    print("baud num is 1")
+                    sayText(f"波特率ID为1")
+                    return
+                elif(baud == 20000):
+                    print("baud num is 2")
+                    sayText(f"波特率ID为2")
+                    return
+                elif(baud == 50000):
+                    print("baud num is 3")
+                    sayText(f"波特率ID为3")
+                    return
+                elif(baud == 100000):
+                    print("baud num is 4")
+                    sayText(f"波特率ID为4")
+                    return
+                elif(baud == 125000):
+                    print("baud num is 5")
+                    sayText(f"波特率ID为5")
+                    return
+                elif(baud == 250000):
+                    print("baud num is 6")
+                    sayText(f"波特率ID为6")
+                    return
+                elif(baud == 500000):
+                    print("baud num is 7")
+                    sayText(f"波特率ID为7")
+                    return
+                elif(baud == 1000000):
+                    print("baud num is 8 or 0 other number ")
+                    sayText(f"波特率ID为8或者0或者其他")
+                    return
 if __name__ == "__main__":
-    asyncio.run(findDevice(250000))
+    searchBaud()
